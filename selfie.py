@@ -4,6 +4,7 @@ import pygame
 class SelfieApp:
     def __init__(self):
         self.capture = cv2.VideoCapture(0)
+        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         pygame.mixer.init()
 
     def take_photo(self):
@@ -35,6 +36,18 @@ class SelfieApp:
         alpha = 0.5  # Adjust the alpha value for transparency
         cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
+    def draw_face_box(self, frame):
+        # Convert the frame to grayscale for face detection
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Detect faces in the frame
+        faces = self.face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+
+        # Draw bounding boxes around detected faces
+        for (x, y, w, h) in faces:
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+
     def play_sound(self, file_path):
         pygame.mixer.music.load(file_path)
         pygame.mixer.music.play()
@@ -45,6 +58,9 @@ class SelfieApp:
 
             # Draw the transparent grid on the frame
             self.draw_grid(frame)
+            # Draw facebox
+            self.draw_face_box(frame)
+
 
             cv2.imshow("Selfie App", frame)
 
