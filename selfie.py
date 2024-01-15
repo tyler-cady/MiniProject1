@@ -4,14 +4,14 @@
 # Last Edit: 1.14.24
 
 import cv2
-import pygame
 import mediapipe as mp
+import pygame
 
 
 class SelfieApp:
 
     def __init__(self):
-        # Init camera, face detection, and sound 
+        # Init camera, face detection, and sound
         self.capture = cv2.VideoCapture(0)
         self.mp_face_detection = mp.solutions.face_detection
         self.face_detection = self.mp_face_detection.FaceDetection(
@@ -24,7 +24,7 @@ class SelfieApp:
         if ret:
             cv2.imwrite("photo.jpg", frame)
             print("Photo taken and saved as photo.jpg")
-            self.play_sound("shutter.mp3")
+            self.play_sound("resources/shutter.mp3")
 
     def draw_grid(self, frame):
         # Draw a grid on the frame
@@ -77,7 +77,7 @@ class SelfieApp:
             return (0, 0, 0, 0)
 
     def print_quadrant(self, pct_tuple):
-        # decides which quadrent or the center the face is most in 
+        # decides which quadrent or the center the face is most in
         quadrants = ["Top Left", "Top Right", "Bottom Left", "Bottom Right"]
         if all(0 <= value <= 50 for value in pct_tuple):
             print("Center")

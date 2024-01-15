@@ -1,6 +1,7 @@
 import cv2
-import pygame
 import mediapipe as mp
+import pygame
+
 
 class SelfieApp:
 
@@ -15,7 +16,7 @@ class SelfieApp:
         if ret:
             cv2.imwrite("photo.jpg", frame)
             print("Photo taken and saved as photo.jpg")
-            self.play_sound("shutter.mp3")
+            self.play_sound("resources/shutter.mp3")
 
     def draw_grid(self, frame):
         h, w, _ = frame.shape
