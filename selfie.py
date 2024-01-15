@@ -80,12 +80,12 @@ class SelfieApp:
         # decides which quadrent or the center the face is most in 
         quadrants = ["Top Left", "Top Right", "Bottom Left", "Bottom Right"]
         if all(0 <= value <= 50 for value in pct_tuple):
-            print("The face is most in Center")
+            print("Center")
         elif all(value == 0 for value in pct_tuple):
             print("No Faces Detected")
         else:
             max_percentage_index = pct_tuple.index(max(pct_tuple))
-            print(f"The face is most in {quadrants[max_percentage_index]}")
+            print(f"{quadrants[max_percentage_index]}")
 
     def run(self):
         # Runs selfie app loop
