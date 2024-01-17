@@ -55,46 +55,45 @@ class SelfieApp:
         pygame.mixer.music.load(file_path)
         pygame.mixer.music.play()
 
-    def determine_quad_pct(self, frame):
-        # Determine the percentage of the user's face that lies in each of the 4 quadrents
+    def get_face_location (self, frame):
+        # Determine the percentage of the user's face that lies in each of the 4 quadrants
         h, w, _ = frame.shape
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.face_detection.process(rgb_frame)
+
         if results.detections:
             detection = results.detections[0]
             bboxC = detection.location_data.relative_bounding_box
-            x, y, width, height = tuple(
-                map(int, (bboxC.xmin * w, bboxC.ymin * h, bboxC.width * w, bboxC.height * h)))
+            x, y, width, height = tuple(map(int, (bboxC.xmin * w, bboxC.ymin * h, bboxC.width * w, bboxC.height * h)))
             total_face_area = width * height
             square1_area = ((w // 2) - x) * ((h // 2) - y)
             square2_area = (x + width - (w // 2)) * ((h // 2) - y)
             square3_area = ((w // 2) - x) * (y + height - (h // 2))
             square4_area = (x + width - (w // 2)) * (y + height - (h // 2))
             pct_tuple = tuple(((square_area / total_face_area) * 100)
-                              for square_area in (square1_area, square2_area, square3_area, square4_area))
-            return pct_tuple
-        else:
-            return (0, 0, 0, 0)
+                            for square_area in (square1_area, square2_area, square3_area, square4_area))
 
-    def print_quadrant(self, pct_tuple):
-        # decides which quadrent or the center the face is most in
-        quadrants = ["Top Left", "Top Right", "Bottom Left", "Bottom Right"]
-        if all(0 <= value <= 50 for value in pct_tuple):
-            print("Center")
-        elif all(value == 0 for value in pct_tuple):
-            print("No Faces Detected")
+            # Determine and return the face location
+            quadrants = ['U', 'I', 'J', 'K']  # U = Top Left, I = Top Right, J = Bottom Left, K = Bottom Right
+            if all(0 <= value <= 50 for value in pct_tuple):
+                return 'C'  # Center
+            elif all(value == 0 for value in pct_tuple):
+                return 'N'  # No Faces Detected
+            else:
+                max_percentage_index = pct_tuple.index(max(pct_tuple))
+                return quadrants[max_percentage_index]
         else:
-            max_percentage_index = pct_tuple.index(max(pct_tuple))
-            print(f"{quadrants[max_percentage_index]}")
+            return 'N'  # No Faces Detected
 
     def run(self):
         # Runs selfie app loop
+        loc = 'N' # Location of face
         while True:
             ret, frame = self.capture.read()
             self.draw_grid(frame)
             self.draw_face_box(frame)
             cv2.imshow("Selfie App", frame)
-            self.print_quadrant(self.determine_quad_pct(frame))
+            locToo = self.get_face_location (frame)
             key = cv2.waitKey(1)
             if key == ord('q'):
                 break
