@@ -84,6 +84,17 @@ class SelfieApp:
                 return quadrants[max_percentage_index]
         else:
             return 'N'  # No Faces Detected
+    
+    def say(self, text):
+        print("this is a function stub")
+    
+    def listen(self):
+        print("this is a function stub")
+
+
+    def guide_user(self, loc, target):
+        print("this is a function stub")
+
 
     def run(self):
         # Runs selfie app loop
