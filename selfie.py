@@ -91,10 +91,8 @@ class SelfieApp:
     def listen(self):
         print("this is a function stub")
 
-
     def guide_user(self, loc, target):
         print("this is a function stub")
-
 
     def run(self):
         # Runs selfie app loop
