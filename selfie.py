@@ -6,6 +6,7 @@
 import cv2
 import mediapipe as mp
 import pygame
+import time
 
 
 class SelfieApp:
@@ -19,11 +20,14 @@ class SelfieApp:
         pygame.mixer.init()
 
     def take_photo(self):
-        # Capturen a frame, save photo, play shutter sound
+        # Capture a frame, save photo, play shutter sound
         ret, frame = self.capture.read()
         if ret:
-            cv2.imwrite("photo.jpg", frame)
-            print("Photo taken and saved as photo.jpg")
+            # Name photo with timestamp and add file extension
+            timestamp = time.strftime("%y%m%d%H%M%S")
+            file_name = f"selfie_{timestamp}.jpg"
+            cv2.imwrite(file_name, frame)
+            print(f"Photo taken and saved as {file_name}")
             self.play_sound("resources/shutter.mp3")
 
     def draw_grid(self, frame):
