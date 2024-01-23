@@ -132,7 +132,7 @@ class SelfieApp:
         else:
             return FACE_NONE  # No faces detected
 
-    def say(self, text):
+    def say(self, text): 
         print("this is a function stub")
 
     def listen(self):
