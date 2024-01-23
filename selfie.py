@@ -9,6 +9,7 @@ import cv2 as cv
 import mediapipe as mp
 import pygame
 import speech_recognition as sr
+import whisper
 from gtts import gTTS
 
 CAMERA_ID = 0
@@ -44,11 +45,13 @@ WHISPER_MODEL = 'tiny.en'
 class SelfieApp:
 
     last_position = 6
+    time_of_last_hint = time.time()
 
     def __init__(self):
         """
         Initialize camera, face detection, microphone, and sound.
         """
+        print('Initializing...')
         self.capture = cv.VideoCapture(CAMERA_ID)
 
         self.face_detection = mp.solutions.face_detection.FaceDetection(
@@ -59,8 +62,11 @@ class SelfieApp:
         self.mic.__enter__()  # This is a hack to avoid using a with
         # statement
         self.recognizer.adjust_for_ambient_noise(self.mic, duration=1)
+        whisper_model = getattr(self.recognizer, "whisper_model", {})
+        whisper_model[WHISPER_MODEL] = whisper.load_model(WHISPER_MODEL)
 
         pygame.mixer.init()
+        self.channel = pygame.mixer.Channel(0)
 
         myobj = gTTS(text='you are in the correct position',
                      lang='en', slow=False)
@@ -132,10 +138,7 @@ class SelfieApp:
         """
         Play a sound from a file.
         """
-        pygame.mixer.music.load(file_path)
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            pass
+        self.channel.queue(pygame.mixer.Sound(file_path))
 
     def get_face_region(self, frame):
         """
@@ -177,18 +180,21 @@ class SelfieApp:
         else:
             return FACE_NONE  # No faces detected
 
-    def say(self, text):
+    def say(self, text, blocking=False):
         myobj = gTTS(text=text, lang='en', slow=False)
         myobj.save('resources/temp.mp3')
         print(text)
         self.play_sound('resources/temp.mp3')
+        if blocking:
+            while self.channel.get_busy():
+                pygame.time.delay(100)
 
     def listen_for_command(self):
+        print('Listening')
         audio = self.recognizer.listen(self.mic)
-        print('recognizing audio')
+        print('Recognizing audio')
         spoken_text = self.recognizer.recognize_whisper(audio,
                                                         model=WHISPER_MODEL)
-        print('done recognizing audio')
         print(f'You said "{spoken_text}"')
         spoken_text = spoken_text.lower()
         help_ = any(keyword in spoken_text for keyword in HELP_KEYWORDS)
@@ -217,7 +223,9 @@ class SelfieApp:
             return None
 
     def guide_user(self, loc, target):
-        if loc != self.last_position:
+        current_time = time.time()
+        time_since_last_hint = current_time - self.time_of_last_hint
+        if loc != self.last_position or time_since_last_hint >= 5:
             self.last_position = loc
             if loc == target:
                 self.play_sound("resources/position.mp3")
@@ -268,21 +276,22 @@ class SelfieApp:
                     self.play_sound("resources/right.mp3")
             elif loc == FACE_NONE:
                 self.play_sound("resources/none.mp3")
+        self.time_of_last_hint = current_time
 
     def tutorial(self):
         self.say('First, say the region where you want your face to be'
                  ' in the picture. Valid regions are "top left",'
-                 ' " top right", "bottom left", and "bottom right.'
+                 ' "top right", "bottom left", and "bottom right".'
                  ' Then, follow the directions to move your face to the'
                  ' correct region. Press "S" to take a picture. Press'
-                 ' "Q" to quit.')
+                 ' "Q" to quit.', blocking=True)
 
     def main_menu(self):
         """
         Main menu of selfie app.
         """
         while True:
-            self.say('Say a region or say "help" for help')
+            self.say('Say a region or say "help" for help', blocking=True)
             target_region = self.listen_for_command()
             if target_region is not None:
                 return target_region
