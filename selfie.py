@@ -8,10 +8,10 @@ import time
 import cv2 as cv
 import mediapipe as mp
 import pygame
-
+import speech_recognition as sr
 from gtts import gTTS
 
-CAMERA_ID = 1
+CAMERA_ID = 0
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
 
 IMAGE_FILE_EXTENSION = 'jpg'
@@ -31,20 +31,39 @@ FACE_BOTTOM_RIGHT = 3
 FACE_CENTER = 4
 FACE_NONE = 5
 
+HELP_KEYWORDS = ['help', 'tutorial']
+LEFT_KEYWORDS = ['left']
+RIGHT_KEYWORDS = ['right']
+TOP_KEYWORDS = ['top', 'upper']
+BOTTOM_KEYWORDS = ['bottom', 'lower']
+CENTER_KEYWORDS = ['center', 'middle']
+
+WHISPER_MODEL = 'tiny.en'
+
+
 class SelfieApp:
 
     last_position = 6
 
     def __init__(self):
         """
-        Initialize camera, face detection, and sound.
+        Initialize camera, face detection, microphone, and sound.
         """
         self.capture = cv.VideoCapture(CAMERA_ID)
+
         self.face_detection = mp.solutions.face_detection.FaceDetection(
             min_detection_confidence=FACE_DETECTION_MIN_CONFIDENCE)
+
+        self.recognizer = sr.Recognizer()
+        self.mic = sr.Microphone()
+        self.mic.__enter__()  # This is a hack to avoid using a with
+        # statement
+        self.recognizer.adjust_for_ambient_noise(self.mic, duration=1)
+
         pygame.mixer.init()
 
-        myobj = gTTS(text='you are in the correct position', lang='en', slow=False)
+        myobj = gTTS(text='you are in the correct position',
+                     lang='en', slow=False)
         myobj.save("resources/position.mp3")
         myobj = gTTS(text='you are out of view', lang='en', slow=False)
         myobj.save("resources/none.mp3")
@@ -115,6 +134,8 @@ class SelfieApp:
         """
         pygame.mixer.music.load(file_path)
         pygame.mixer.music.play()
+        while pygame.mixer.music.get_busy():
+            pass
 
     def get_face_region(self, frame):
         """
@@ -156,11 +177,44 @@ class SelfieApp:
         else:
             return FACE_NONE  # No faces detected
 
-    def say(self, text): 
-        print("this is a function stub")
+    def say(self, text):
+        myobj = gTTS(text=text, lang='en', slow=False)
+        myobj.save('resources/temp.mp3')
+        print(text)
+        self.play_sound('resources/temp.mp3')
 
-    def listen(self):
-        print("this is a function stub")
+    def listen_for_command(self):
+        audio = self.recognizer.listen(self.mic)
+        print('recognizing audio')
+        spoken_text = self.recognizer.recognize_whisper(audio,
+                                                        model=WHISPER_MODEL)
+        print('done recognizing audio')
+        print(f'You said "{spoken_text}"')
+        spoken_text = spoken_text.lower()
+        help_ = any(keyword in spoken_text for keyword in HELP_KEYWORDS)
+        left = any(keyword in spoken_text for keyword in LEFT_KEYWORDS)
+        right = any(keyword in spoken_text for keyword in RIGHT_KEYWORDS)
+        top = any(keyword in spoken_text for keyword in TOP_KEYWORDS)
+        bottom = any(keyword in spoken_text for keyword in BOTTOM_KEYWORDS)
+        center = any(keyword in spoken_text for keyword in CENTER_KEYWORDS)
+        if help_:
+            self.tutorial()
+            return None
+        elif center and not any((left, right, top, bottom)):
+            return FACE_CENTER
+        elif left != right and top != bottom and not center:
+            if left:
+                if top:
+                    return FACE_TOP_LEFT
+                else:  # bottom
+                    return FACE_BOTTOM_LEFT
+            else:  # right
+                if top:
+                    return FACE_TOP_RIGHT
+                else:  # bottom
+                    return FACE_BOTTOM_RIGHT
+        else:
+            return None
 
     def guide_user(self, loc, target):
         if loc != self.last_position:
@@ -168,72 +222,110 @@ class SelfieApp:
             if loc == target:
                 self.play_sound("resources/position.mp3")
             elif loc == FACE_TOP_LEFT:
-                if(target == FACE_TOP_RIGHT):
+                if (target == FACE_TOP_RIGHT):
                     self.play_sound("resources/left.mp3")
-                if(target == FACE_CENTER):
+                if (target == FACE_CENTER):
                     self.play_sound("resources/down_left.mp3")
-                if(target == FACE_BOTTOM_LEFT):
+                if (target == FACE_BOTTOM_LEFT):
                     self.play_sound("resources/down.mp3")
-                if(target == FACE_BOTTOM_RIGHT):
+                if (target == FACE_BOTTOM_RIGHT):
                     self.play_sound("resources/down_left.mp3")
             elif loc == FACE_TOP_RIGHT:
-                if(target == FACE_TOP_LEFT):
+                if (target == FACE_TOP_LEFT):
                     self.play_sound("resources/right.mp3")
-                if(target == FACE_CENTER):
+                if (target == FACE_CENTER):
                     self.play_sound("resources/down_right.mp3")
-                if(target == FACE_BOTTOM_LEFT):
+                if (target == FACE_BOTTOM_LEFT):
                     self.play_sound("resources/down_right.mp3")
-                if(target == FACE_BOTTOM_RIGHT):
+                if (target == FACE_BOTTOM_RIGHT):
                     self.play_sound("resources/down.mp3")
             elif loc == FACE_CENTER:
-                if(target == FACE_TOP_LEFT):
+                if (target == FACE_TOP_LEFT):
                     self.play_sound("resources/up_right.mp3")
-                if(target == FACE_TOP_RIGHT):
+                if (target == FACE_TOP_RIGHT):
                     self.play_sound("resources/up_left.mp3")
-                if(target == FACE_BOTTOM_LEFT):
+                if (target == FACE_BOTTOM_LEFT):
                     self.play_sound("resources/down_right.mp3")
-                if(target == FACE_BOTTOM_RIGHT):
+                if (target == FACE_BOTTOM_RIGHT):
                     self.play_sound("resources/down_left.mp3")
             elif loc == FACE_BOTTOM_LEFT:
-                if(target == FACE_TOP_LEFT):
+                if (target == FACE_TOP_LEFT):
                     self.play_sound("resources/up.mp3")
-                if(target == FACE_TOP_RIGHT):
+                if (target == FACE_TOP_RIGHT):
                     self.play_sound("resources/up_left.mp3")
-                if(target == FACE_CENTER):
+                if (target == FACE_CENTER):
                     self.play_sound("resources/up_left.mp3")
-                if(target == FACE_BOTTOM_RIGHT):
+                if (target == FACE_BOTTOM_RIGHT):
                     self.play_sound("resources/left.mp3")
             elif loc == FACE_BOTTOM_RIGHT:
-                if(target == FACE_TOP_LEFT):
+                if (target == FACE_TOP_LEFT):
                     self.play_sound("resources/up_right.mp3")
-                if(target == FACE_TOP_RIGHT):
+                if (target == FACE_TOP_RIGHT):
                     self.play_sound("resources/up.mp3")
-                if(target == FACE_CENTER):
+                if (target == FACE_CENTER):
                     self.play_sound("resources/up_right.mp3")
-                if(target == FACE_BOTTOM_LEFT):
+                if (target == FACE_BOTTOM_LEFT):
                     self.play_sound("resources/right.mp3")
             elif loc == FACE_NONE:
                 self.play_sound("resources/none.mp3")
+
+    def tutorial(self):
+        self.say('First, say the region where you want your face to be'
+                 ' in the picture. Valid regions are "top left",'
+                 ' " top right", "bottom left", and "bottom right.'
+                 ' Then, follow the directions to move your face to the'
+                 ' correct region. Press "S" to take a picture. Press'
+                 ' "Q" to quit.')
+
+    def main_menu(self):
+        """
+        Main menu of selfie app.
+        """
+        while True:
+            self.say('Say a region or say "help" for help')
+            target_region = self.listen_for_command()
+            if target_region is not None:
+                return target_region
 
     def run(self):
         """
         Run selfie app main loop.
         """
-        loc = FACE_NONE  # Location of face
         while True:
-            ret, frame = self.capture.read()
-            if ret:
-                self.draw_grid(frame)
-                self.draw_face_box(frame)
-                cv.imshow("Selfie App", frame)
-                locToo = self.get_face_region(frame)
-                self.guide_user(locToo, FACE_CENTER)
+            target_region = self.main_menu()
+            if target_region == FACE_TOP_LEFT:
+                self.say('Target region set to top left.')
+            elif target_region == FACE_TOP_RIGHT:
+                self.say('Target region set to top right.')
+            elif target_region == FACE_BOTTOM_LEFT:
+                self.say('Target region set to bottom left.')
+            elif target_region == FACE_BOTTOM_RIGHT:
+                self.say('Target region set to bottom right.')
+            elif target_region == FACE_CENTER:
+                self.say('Target region set to center.')
+            while True:
+                ret, frame = self.capture.read()
+                if ret:
+                    self.draw_grid(frame)
+                    self.draw_face_box(frame)
+                    cv.imshow("Selfie App", frame)
+                    loc = self.get_face_region(frame)
+                    self.guide_user(loc, target_region)
+                key = cv.waitKey(1)
+                if key == ord('q'):
+                    break
+                elif key == ord('s'):
+                    self.say('Taking photo...')
+                    self.take_photo()
+                    break
+
             key = cv.waitKey(1)
             if key == ord('q'):
+                self.say('Quitting...')
                 break
-            elif key == ord('s'):
-                self.take_photo()
 
+        self.mic.__exit__()  # This is a hack to avoid using a with
+        # statement
         self.capture.release()
         cv.destroyAllWindows()
 
