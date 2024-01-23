@@ -9,7 +9,9 @@ import cv2 as cv
 import mediapipe as mp
 import pygame
 
-CAMERA_ID = 0
+from gtts import gTTS
+
+CAMERA_ID = 1
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
 
 IMAGE_FILE_EXTENSION = 'jpg'
@@ -29,8 +31,9 @@ FACE_BOTTOM_RIGHT = 3
 FACE_CENTER = 4
 FACE_NONE = 5
 
-
 class SelfieApp:
+
+    last_position = 6
 
     def __init__(self):
         """
@@ -40,6 +43,27 @@ class SelfieApp:
         self.face_detection = mp.solutions.face_detection.FaceDetection(
             min_detection_confidence=FACE_DETECTION_MIN_CONFIDENCE)
         pygame.mixer.init()
+
+        myobj = gTTS(text='you are in the correct position', lang='en', slow=False)
+        myobj.save("resources/position.mp3")
+        myobj = gTTS(text='you are out of view', lang='en', slow=False)
+        myobj.save("resources/none.mp3")
+        myobj = gTTS(text='move to the left', lang='en', slow=False)
+        myobj.save("resources/left.mp3")
+        myobj = gTTS(text='move to the right', lang='en', slow=False)
+        myobj.save("resources/right.mp3")
+        myobj = gTTS(text='move up', lang='en', slow=False)
+        myobj.save("resources/up.mp3")
+        myobj = gTTS(text='move down', lang='en', slow=False)
+        myobj.save("resources/down.mp3")
+        myobj = gTTS(text='move up and to the left', lang='en', slow=False)
+        myobj.save("resources/up_left.mp3")
+        myobj = gTTS(text='move down and to the left', lang='en', slow=False)
+        myobj.save("resources/down_left.mp3")
+        myobj = gTTS(text='move up and to the right', lang='en', slow=False)
+        myobj.save("resources/up_right.mp3")
+        myobj = gTTS(text='move down and to the right', lang='en', slow=False)
+        myobj.save("resources/down_right.mp3")
 
     def take_photo(self):
         """
@@ -139,7 +163,57 @@ class SelfieApp:
         print("this is a function stub")
 
     def guide_user(self, loc, target):
-        print("this is a function stub")
+        if loc != self.last_position:
+            self.last_position = loc
+            if loc == target:
+                self.play_sound("resources/position.mp3")
+            elif loc == FACE_TOP_LEFT:
+                if(target == FACE_TOP_RIGHT):
+                    self.play_sound("resources/left.mp3")
+                if(target == FACE_CENTER):
+                    self.play_sound("resources/down_left.mp3")
+                if(target == FACE_BOTTOM_LEFT):
+                    self.play_sound("resources/down.mp3")
+                if(target == FACE_BOTTOM_RIGHT):
+                    self.play_sound("resources/down_left.mp3")
+            elif loc == FACE_TOP_RIGHT:
+                if(target == FACE_TOP_LEFT):
+                    self.play_sound("resources/right.mp3")
+                if(target == FACE_CENTER):
+                    self.play_sound("resources/down_right.mp3")
+                if(target == FACE_BOTTOM_LEFT):
+                    self.play_sound("resources/down_right.mp3")
+                if(target == FACE_BOTTOM_RIGHT):
+                    self.play_sound("resources/down.mp3")
+            elif loc == FACE_CENTER:
+                if(target == FACE_TOP_LEFT):
+                    self.play_sound("resources/up_right.mp3")
+                if(target == FACE_TOP_RIGHT):
+                    self.play_sound("resources/up_left.mp3")
+                if(target == FACE_BOTTOM_LEFT):
+                    self.play_sound("resources/down_right.mp3")
+                if(target == FACE_BOTTOM_RIGHT):
+                    self.play_sound("resources/down_left.mp3")
+            elif loc == FACE_BOTTOM_LEFT:
+                if(target == FACE_TOP_LEFT):
+                    self.play_sound("resources/up.mp3")
+                if(target == FACE_TOP_RIGHT):
+                    self.play_sound("resources/up_left.mp3")
+                if(target == FACE_CENTER):
+                    self.play_sound("resources/up_left.mp3")
+                if(target == FACE_BOTTOM_RIGHT):
+                    self.play_sound("resources/left.mp3")
+            elif loc == FACE_BOTTOM_RIGHT:
+                if(target == FACE_TOP_LEFT):
+                    self.play_sound("resources/up_right.mp3")
+                if(target == FACE_TOP_RIGHT):
+                    self.play_sound("resources/up.mp3")
+                if(target == FACE_CENTER):
+                    self.play_sound("resources/up_right.mp3")
+                if(target == FACE_BOTTOM_LEFT):
+                    self.play_sound("resources/right.mp3")
+            elif loc == FACE_NONE:
+                self.play_sound("resources/none.mp3")
 
     def run(self):
         """
@@ -153,6 +227,7 @@ class SelfieApp:
                 self.draw_face_box(frame)
                 cv.imshow("Selfie App", frame)
                 locToo = self.get_face_region(frame)
+                self.guide_user(locToo, FACE_CENTER)
             key = cv.waitKey(1)
             if key == ord('q'):
                 break
