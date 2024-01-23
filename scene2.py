@@ -75,7 +75,7 @@ class SceneApp:
                        1 - GRIDLINES_ALPHA, 0, frame)
     # Load YOLOv8n
 
-    def detect_objects(frame):
+    def detect_objects(self,frame):
         blob = cv.dnn.blobFromImage(frame, scalefactor=1/255.0, size=(416, 416), swapRB=True, crop=False)
         net.setInput(blob)
         detections = net.forward()
@@ -99,7 +99,7 @@ class SceneApp:
 
 
     def draw_objects(self, frame):
-        frame_with_objects = detect_objects(frame)
+        frame_with_objects = self.detect_objects(frame)
         return frame_with_objects
 
 
