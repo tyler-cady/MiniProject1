@@ -103,7 +103,7 @@ class SelfieApp:
         if ret:
             # Name photo with timestamp and add file extension.
             self.play_sound(SHUTTER_SOUND_FILE)
-            timestamp = time.strftime('%y%m%d%H%M%S')
+            timestamp = time.strftime('%Y-%m-%d_%H.%M.%S')
             file_name = f'selfie_{timestamp}.{IMAGE_FILE_EXTENSION}'
             cv.imwrite(file_name, frame)
             self.say(f'Photo taken and saved as {file_name}')
