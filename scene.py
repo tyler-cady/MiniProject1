@@ -87,7 +87,7 @@ class SceneApp:
         pygame.mixer.music.load(file_path)
         pygame.mixer.music.play()
 
-    def locate_objects(self, frame):
+
         
     def run(self):
         try:

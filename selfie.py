@@ -7,7 +7,7 @@ import time
 
 import cv2 as cv
 import mediapipe as mp
-import pygame
+import pygame 
 import speech_recognition as sr
 import whisper
 from gtts import gTTS
@@ -337,6 +337,7 @@ class SelfieApp:
         # statement
         self.capture.release()
         cv.destroyAllWindows()
+
 
 
 if __name__ == '__main__':
