@@ -7,10 +7,12 @@ import time
 
 import cv2 as cv
 import mediapipe as mp
-import pygame 
+import pygame
 import speech_recognition as sr
 import whisper
 from gtts import gTTS
+
+TEST_MODE = True
 
 CAMERA_ID = 0
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
@@ -290,6 +292,8 @@ class SelfieApp:
         """
         Main menu of selfie app.
         """
+        if TEST_MODE:
+            self.participant_id = input('Enter Particpant ID: ')
         while True:
             self.say('Say a region or say "help" for help', blocking=True)
             target_region = self.listen_for_command()
@@ -300,6 +304,8 @@ class SelfieApp:
         """
         Run selfie app main loop.
         """
+        if TEST_MODE:
+            start_time = time.time()
         while True:
             target_region = self.main_menu()
             if target_region == FACE_TOP_LEFT:
@@ -326,6 +332,11 @@ class SelfieApp:
                 elif key == ord('s'):
                     self.say('Taking photo...')
                     self.take_photo()
+                    end_time = time.time()
+                    if TEST_MODE:
+                        with open(f'data_{self.participant_id}.csv', 'a') as f:
+                            f.write(
+                                f'{self.participant_id},{target_region},{end_time - start_time}\n')
                     break
 
             key = cv.waitKey(1)
@@ -337,7 +348,6 @@ class SelfieApp:
         # statement
         self.capture.release()
         cv.destroyAllWindows()
-
 
 
 if __name__ == '__main__':
