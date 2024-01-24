@@ -16,6 +16,7 @@ TEST_MODE = True
 
 CAMERA_ID = 0
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
+TIME_TO_CAPTURE = 2
 
 IMAGE_FILE_EXTENSION = 'jpg'
 SHUTTER_SOUND_FILE = 'resources/shutter.mp3'
@@ -33,8 +34,10 @@ FACE_BOTTOM_LEFT = 2
 FACE_BOTTOM_RIGHT = 3
 FACE_CENTER = 4
 FACE_NONE = 5
+QUIT = 6
 
 HELP_KEYWORDS = ['help', 'tutorial']
+QUIT_KEYWORDS = ['quit', 'exit']
 LEFT_KEYWORDS = ['left']
 RIGHT_KEYWORDS = ['right']
 TOP_KEYWORDS = ['top', 'upper']
@@ -200,6 +203,7 @@ class SelfieApp:
         print(f'You said "{spoken_text}"')
         spoken_text = spoken_text.lower()
         help_ = any(keyword in spoken_text for keyword in HELP_KEYWORDS)
+        quit_ = any(keyword in spoken_text for keyword in QUIT_KEYWORDS)
         left = any(keyword in spoken_text for keyword in LEFT_KEYWORDS)
         right = any(keyword in spoken_text for keyword in RIGHT_KEYWORDS)
         top = any(keyword in spoken_text for keyword in TOP_KEYWORDS)
@@ -208,6 +212,8 @@ class SelfieApp:
         if help_:
             self.tutorial()
             return None
+        elif quit_:
+            return QUIT
         elif center and not any((left, right, top, bottom)):
             return FACE_CENTER
         elif left != right and top != bottom and not center:
@@ -285,8 +291,15 @@ class SelfieApp:
                  ' in the picture. Valid regions are "top left",'
                  ' "top right", "bottom left", and "bottom right".'
                  ' Then, follow the directions to move your face to the'
-                 ' correct region. Press "S" to take a picture. Press'
-                 ' "Q" to quit.', blocking=True)
+                 ' specified region. A picture will be taken'
+                 ' automatically after you have been in the specified'
+                 f' region for {TIME_TO_CAPTURE} seconds. After a'
+                 ' picture has been taken, you may specify a different'
+                 ' region and take another picutre, say "quit" to quit'
+                 ' the application, or say "help" to access this'
+                 ' information. You may also press the "S" key to take'
+                 ' a picture at any time or the "Q" key to quit at any'
+                 ' time.', blocking=True)
 
     def main_menu(self):
         """
@@ -296,9 +309,9 @@ class SelfieApp:
             self.participant_id = input('Enter Particpant ID: ')
         while True:
             self.say('Say a region or say "help" for help', blocking=True)
-            target_region = self.listen_for_command()
-            if target_region is not None:
-                return target_region
+            command = self.listen_for_command()
+            if command is not None:
+                return command
 
     def run(self):
         """
@@ -319,6 +332,8 @@ class SelfieApp:
                 self.say('Target region set to bottom right.')
             elif target_region == FACE_CENTER:
                 self.say('Target region set to center.')
+            elif target_region == QUIT:
+                break
             time_in_target_region = 0
             while True:
                 ret, frame = self.capture.read()
@@ -338,10 +353,9 @@ class SelfieApp:
                 key = cv.waitKey(1)
                 if key == ord('q'):
                     quit_ = True
-                    self.say('Quitting...')
                     break
-                elif key == ord('s') or time_in_target_region > 2:
-                    self.say('Taking photo...')
+                elif key == ord('s') or time_in_target_region > TIME_TO_CAPTURE:
+                    self.say('Taking photo')
                     self.take_photo()
                     end_time = time.time()
                     if TEST_MODE:
@@ -352,6 +366,7 @@ class SelfieApp:
             if quit_:
                 break
 
+        self.say('Quitting')
         self.mic.__exit__()  # This is a hack to avoid using a with
         # statement
         self.capture.release()
