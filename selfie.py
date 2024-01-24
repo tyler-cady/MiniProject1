@@ -102,11 +102,11 @@ class SelfieApp:
         ret, frame = self.capture.read()
         if ret:
             # Name photo with timestamp and add file extension.
+            self.play_sound(SHUTTER_SOUND_FILE)
             timestamp = time.strftime('%y%m%d%H%M%S')
             file_name = f'selfie_{timestamp}.{IMAGE_FILE_EXTENSION}'
             cv.imwrite(file_name, frame)
-            print(f'Photo taken and saved as {file_name}')
-            self.play_sound(SHUTTER_SOUND_FILE)
+            self.say(f'Photo taken and saved as {file_name}')
 
     def draw_grid(self, frame):
         """
@@ -355,9 +355,8 @@ class SelfieApp:
                     quit_ = True
                     break
                 elif key == ord('s') or time_in_target_region > TIME_TO_CAPTURE:
-                    self.say('Taking photo')
-                    self.take_photo()
                     end_time = time.time()
+                    self.take_photo()
                     if TEST_MODE:
                         with open(f'data_{self.participant_id}.csv', 'a') as f:
                             f.write(
