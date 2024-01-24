@@ -319,6 +319,7 @@ class SelfieApp:
                 self.say('Target region set to bottom right.')
             elif target_region == FACE_CENTER:
                 self.say('Target region set to center.')
+            time_in_target_region = 0
             while True:
                 ret, frame = self.capture.read()
                 if ret:
@@ -327,12 +328,19 @@ class SelfieApp:
                     cv.imshow("Selfie App", frame)
                     loc = self.get_face_region(frame)
                     self.guide_user(loc, target_region)
+                if loc == target_region and time_in_target_region == 0:
+                    time_entered_target_region = time.time()
+                elif loc == target_region:  # not time_in_target_region == 0
+                    time_in_target_region = (time.time()
+                                             - time_entered_target_region)
+                else:  # not loc == target region
+                    time_in_target_region = 0
                 key = cv.waitKey(1)
                 if key == ord('q'):
                     quit_ = True
                     self.say('Quitting...')
                     break
-                elif key == ord('s'):
+                elif key == ord('s') or time_in_target_region > 2:
                     self.say('Taking photo...')
                     self.take_photo()
                     end_time = time.time()
