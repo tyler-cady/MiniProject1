@@ -306,6 +306,7 @@ class SelfieApp:
         """
         if TEST_MODE:
             start_time = time.time()
+        quit_ = False
         while True:
             target_region = self.main_menu()
             if target_region == FACE_TOP_LEFT:
@@ -328,6 +329,8 @@ class SelfieApp:
                     self.guide_user(loc, target_region)
                 key = cv.waitKey(1)
                 if key == ord('q'):
+                    quit_ = True
+                    self.say('Quitting...')
                     break
                 elif key == ord('s'):
                     self.say('Taking photo...')
@@ -338,10 +341,7 @@ class SelfieApp:
                             f.write(
                                 f'{self.participant_id},{target_region},{end_time - start_time}\n')
                     break
-
-            key = cv.waitKey(1)
-            if key == ord('q'):
-                self.say('Quitting...')
+            if quit_:
                 break
 
         self.mic.__exit__()  # This is a hack to avoid using a with
