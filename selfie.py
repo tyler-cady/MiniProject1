@@ -307,6 +307,7 @@ class SelfieApp:
         """
         if TEST_MODE:
             self.participant_id = input('Enter Particpant ID: ')
+            self.start_time = time.time()
         while True:
             self.say('Say a region or say "help" for help', blocking=True)
             command = self.listen_for_command()
@@ -317,8 +318,6 @@ class SelfieApp:
         """
         Run selfie app main loop.
         """
-        if TEST_MODE:
-            start_time = time.time()
         quit_ = False
         while True:
             target_region = self.main_menu()
@@ -361,15 +360,14 @@ class SelfieApp:
                     if TEST_MODE:
                         with open(f'data_{self.participant_id}.csv', 'a') as f:
                             f.write(
-                                f'{self.participant_id},{target_region},{end_time - start_time}\n')
+                                f'{self.participant_id},{target_region},{end_time - self.start_time}\n')
                     break
             if quit_:
                 break
 
         self.say('Quitting')
-        # This is a hack to avoid using a with
-        self.mic.__exit__(None, None, None)
-        # statement
+        self.mic.__exit__(None, None, None)  # This is a hack to avoid
+        # using a with statement
         self.capture.release()
         cv.destroyAllWindows()
 
