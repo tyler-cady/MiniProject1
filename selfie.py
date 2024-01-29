@@ -334,7 +334,7 @@ class SelfieApp:
                 self.say('Target region set to center.')
             elif target_region == QUIT:
                 break
-            time_in_target_region = 0
+            time_in_target_region = -1
             while True:
                 ret, frame = self.capture.read()
                 if ret:
@@ -343,13 +343,14 @@ class SelfieApp:
                     cv.imshow("Selfie App", frame)
                     loc = self.get_face_region(frame)
                     self.guide_user(loc, target_region)
-                if loc == target_region and time_in_target_region == 0:
-                    time_entered_target_region = time.time()
-                elif loc == target_region:  # not time_in_target_region == 0
-                    time_in_target_region = (time.time()
+                if loc == target_region:
+                    current_time = time.time()
+                    if time_in_target_region == -1:
+                        time_entered_target_region = current_time
+                    time_in_target_region = (current_time
                                              - time_entered_target_region)
-                else:  # not loc == target region
-                    time_in_target_region = 0
+                else:  # not loc == target_region
+                    time_in_target_region = -1
                 key = cv.waitKey(1)
                 if key == ord('q'):
                     quit_ = True
@@ -366,7 +367,8 @@ class SelfieApp:
                 break
 
         self.say('Quitting')
-        self.mic.__exit__(None, None, None)  # This is a hack to avoid using a with
+        # This is a hack to avoid using a with
+        self.mic.__exit__(None, None, None)
         # statement
         self.capture.release()
         cv.destroyAllWindows()
