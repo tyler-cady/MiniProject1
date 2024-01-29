@@ -366,7 +366,7 @@ class SelfieApp:
                 break
 
         self.say('Quitting')
-        self.mic.__exit__()  # This is a hack to avoid using a with
+        self.mic.__exit__(None, None, None)  # This is a hack to avoid using a with
         # statement
         self.capture.release()
         cv.destroyAllWindows()
