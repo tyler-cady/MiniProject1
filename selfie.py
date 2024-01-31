@@ -328,15 +328,15 @@ class SelfieApp:
         while True:
             target_region = self.main_menu()
             if target_region == FACE_TOP_LEFT:
-                self.say('Target region set to top left.')
+                self.say('Target region set to top left.', blocking=True)
             elif target_region == FACE_TOP_RIGHT:
-                self.say('Target region set to top right.')
+                self.say('Target region set to top right.', blocking=True)
             elif target_region == FACE_BOTTOM_LEFT:
-                self.say('Target region set to bottom left.')
+                self.say('Target region set to bottom left.', blocking=True)
             elif target_region == FACE_BOTTOM_RIGHT:
-                self.say('Target region set to bottom right.')
+                self.say('Target region set to bottom right.', blocking=True)
             elif target_region == FACE_CENTER:
-                self.say('Target region set to center.')
+                self.say('Target region set to center.', blocking=True)
             elif target_region == QUIT:
                 break
             time_in_target_region = -1
