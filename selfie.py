@@ -138,11 +138,15 @@ class SelfieApp:
                 cv.rectangle(frame, bbox, FACE_BOX_LINE_COLOR_BGR,
                              FACE_BOX_LINE_THICKNESS)
 
-    def play_sound(self, file_path):
+    def play_sound(self, file_path, queue=True):
         """
         Play a sound from a file.
         """
-        self.channel.queue(pygame.mixer.Sound(file_path))
+        sound = pygame.mixer.Sound(file_path)
+        if queue:
+            self.channel.queue(sound)
+        else:
+            self.channel.play(sound)
 
     def get_face_region(self, frame):
         """
@@ -198,7 +202,7 @@ class SelfieApp:
         print('Listening')
         audio = self.recognizer.listen(self.mic,
                                        phrase_time_limit=PHRASE_TIME_LIMIT)
-        self.play_sound('resources/done_listening.mp3')
+        self.play_sound('resources/done_listening.mp3', queue=False)
         print('Recognizing audio')
         spoken_text = self.recognizer.recognize_whisper(audio,
                                                         model=WHISPER_MODEL)
