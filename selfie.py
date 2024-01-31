@@ -66,8 +66,8 @@ class SelfieApp:
         self.mic = sr.Microphone()
         self.mic.__enter__()  # This is a hack to avoid using a with statement
         self.recognizer.adjust_for_ambient_noise(self.mic, duration=1)
-        self.recognizer.listen(
-            self.mic, timeout=0, phrase_time_limit=0)  # Load Whisper model
+        audio = self.recognizer.record(self.mic, 0.1)
+        self.recognizer.recognize_whisper(audio, model=WHISPER_MODEL)  # Load Whisper model
 
         pygame.mixer.init()
         self.channel = pygame.mixer.Channel(0)
