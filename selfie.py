@@ -16,7 +16,7 @@ TEST_MODE = True
 
 CAMERA_ID = 0
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
-TIME_TO_CAPTURE = 2
+TIME_TO_COUNTDOWN = 2
 
 IMAGE_FILE_EXTENSION = 'jpg'
 SHUTTER_SOUND_FILE = 'resources/shutter.mp3'
@@ -44,6 +44,7 @@ TOP_KEYWORDS = ['top', 'upper']
 BOTTOM_KEYWORDS = ['bottom', 'lower']
 CENTER_KEYWORDS = ['center', 'middle']
 
+PHRASE_TIME_LIMIT = 2
 WHISPER_MODEL = 'tiny.en'
 
 
@@ -195,8 +196,11 @@ class SelfieApp:
                 pygame.time.delay(100)
 
     def listen_for_command(self):
+        self.play_sound('resources/listening.mp3')
         print('Listening')
-        audio = self.recognizer.listen(self.mic)
+        audio = self.recognizer.listen(self.mic,
+                                       phrase_time_limit=PHRASE_TIME_LIMIT)
+        self.play_sound('resources/done_listening.mp3')
         print('Recognizing audio')
         spoken_text = self.recognizer.recognize_whisper(audio,
                                                         model=WHISPER_MODEL)
@@ -293,7 +297,7 @@ class SelfieApp:
                  ' Then, follow the directions to move your face to the'
                  ' specified region. A picture will be taken'
                  ' automatically after you have been in the specified'
-                 f' region for {TIME_TO_CAPTURE} seconds. After a'
+                 f' region for {TIME_TO_COUNTDOWN} seconds. After a'
                  ' picture has been taken, you may specify a different'
                  ' region and take another picutre, say "quit" to quit'
                  ' the application, or say "help" to access this'
@@ -354,7 +358,7 @@ class SelfieApp:
                 if key == ord('q'):
                     quit_ = True
                     break
-                elif key == ord('s') or time_in_target_region > TIME_TO_CAPTURE:
+                elif key == ord('s') or time_in_target_region > TIME_TO_COUNTDOWN + 3:
                     end_time = time.time()
                     self.take_photo()
                     if TEST_MODE:
@@ -362,6 +366,8 @@ class SelfieApp:
                             f.write(
                                 f'{self.participant_id},{target_region},{end_time - self.start_time}\n')
                     break
+                elif time_in_target_region > TIME_TO_COUNTDOWN:
+                    self.say('3... 2... 1...')
             if quit_:
                 break
 
