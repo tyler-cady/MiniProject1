@@ -9,7 +9,6 @@ import cv2 as cv
 import mediapipe as mp
 import pygame
 import speech_recognition as sr
-import whisper
 from gtts import gTTS
 
 TEST_MODE = True
@@ -65,11 +64,10 @@ class SelfieApp:
 
         self.recognizer = sr.Recognizer()
         self.mic = sr.Microphone()
-        self.mic.__enter__()  # This is a hack to avoid using a with
-        # statement
+        self.mic.__enter__()  # This is a hack to avoid using a with statement
         self.recognizer.adjust_for_ambient_noise(self.mic, duration=1)
-        whisper_model = getattr(self.recognizer, "whisper_model", {})
-        whisper_model[WHISPER_MODEL] = whisper.load_model(WHISPER_MODEL)
+        self.recognizer.listen(
+            self.mic, timeout=0, phrase_time_limit=0)  # Load Whisper model
 
         pygame.mixer.init()
         self.channel = pygame.mixer.Channel(0)
