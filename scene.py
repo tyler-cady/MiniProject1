@@ -14,7 +14,7 @@ from ultralytics import YOLO
 model = YOLO('yolov8n.pt')
 
 # Constants
-CAMERA_ID = 1
+CAMERA_ID = 0
 OBJ_DETECTION_THRESHOLD = 0.2
 TIME_TO_COUNTDOWN = 2
 
@@ -35,6 +35,7 @@ OBJ_BOTTOM_RIGHT = 3
 OBJ_CENTER = 4
 OBJ_NONE = 5
 QUIT = 6
+START = 7
 
 HELP_KEYWORDS = ['help', 'tutorial']
 QUIT_KEYWORDS = ['quit', 'exit']
@@ -43,6 +44,7 @@ RIGHT_KEYWORDS = ['right']
 TOP_KEYWORDS = ['top', 'upper']
 BOTTOM_KEYWORDS = ['bottom', 'lower']
 CENTER_KEYWORDS = ['center', 'middle']
+START_KEYWORDS = ['start', 'begin']
 ONE_KEYWORDS = ['one', '1']
 TWO_KEYWORDS = ['two', '2']
 THREE_KEYWORDS = ['three', '3']
@@ -168,6 +170,7 @@ class SceneApp:
         spoken_text = spoken_text.lower()
         help_ = any(keyword in spoken_text for keyword in HELP_KEYWORDS)
         quit_ = any(keyword in spoken_text for keyword in QUIT_KEYWORDS)
+        start_ = any(keyword in spoken_text for keyword in START_KEYWORDS)
         left = any(keyword in spoken_text for keyword in LEFT_KEYWORDS)
         right = any(keyword in spoken_text for keyword in RIGHT_KEYWORDS)
         top = any(keyword in spoken_text for keyword in TOP_KEYWORDS)
@@ -178,6 +181,8 @@ class SceneApp:
             return None
         elif quit_:
             return QUIT
+        elif start_:
+            return START
         elif center and not any((left, right, top, bottom)):
             return OBJ_CENTER
         elif left != right and top != bottom and not center:
@@ -440,10 +445,19 @@ class SceneApp:
     def mainMenu(self):
         while True:
             self.say(
-                "Welcome to SceneApp. Say a region or say help for a tutorial.", blocking=True)
+                "Welcome to SceneApp. Say start to start taking a picture, or say help for a tutorial.", blocking=True)
+            command = self.listen_for_command()
+            if command == START:
+                return command
+
+    def choose_region(self):
+        while True:
+            self.say(
+                "Specify a region for the chosen object.", blocking=True)
             command = self.listen_for_command()
             if command is not None:
-                return command
+                if command != START:
+                    return command
 
     def run(self):
         """
@@ -453,7 +467,12 @@ class SceneApp:
         quit_ = False
         while True:
 
-            target_region = self.mainMenu()
+            self.mainMenu()
+
+            ret, frame = self.capture.read()
+            target_object = self.choose_object(frame)
+
+            target_region = self.choose_region()
             if target_region == OBJ_TOP_LEFT:
                 self.say('Target region set to top left.', blocking=True)
             elif target_region == OBJ_TOP_RIGHT:
@@ -467,9 +486,6 @@ class SceneApp:
             elif target_region == QUIT:
                 break
             time_in_target_region = -1
-
-            ret, frame = self.capture.read()
-            target_object = self.choose_object(frame)
 
             while True:
                 ret, frame = self.capture.read()
