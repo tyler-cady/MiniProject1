@@ -11,11 +11,13 @@ import pygame
 import speech_recognition as sr
 from gtts import gTTS
 
-TEST_MODE = True
+TEST_MODE = False
 
-CAMERA_ID = 1
+CAMERA_ID = 0
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
+TIME_BETWEEN_HINTS = 2
 TIME_TO_COUNTDOWN = 2
+COUNTDOWN_SECONDS = 2.5
 
 IMAGE_FILE_EXTENSION = 'jpg'
 SHUTTER_SOUND_FILE = 'resources/shutter.mp3'
@@ -77,21 +79,21 @@ class SelfieApp:
         myobj.save("resources/position.mp3")
         myobj = gTTS(text='you are out of view', lang='en', slow=False)
         myobj.save("resources/none.mp3")
-        myobj = gTTS(text='move to the left', lang='en', slow=False)
+        myobj = gTTS(text='move left', lang='en', slow=False)
         myobj.save("resources/left.mp3")
-        myobj = gTTS(text='move to the right', lang='en', slow=False)
+        myobj = gTTS(text='move right', lang='en', slow=False)
         myobj.save("resources/right.mp3")
         myobj = gTTS(text='move up', lang='en', slow=False)
         myobj.save("resources/up.mp3")
         myobj = gTTS(text='move down', lang='en', slow=False)
         myobj.save("resources/down.mp3")
-        myobj = gTTS(text='move up and to the left', lang='en', slow=False)
+        myobj = gTTS(text='move up and left', lang='en', slow=False)
         myobj.save("resources/up_left.mp3")
-        myobj = gTTS(text='move down and to the left', lang='en', slow=False)
+        myobj = gTTS(text='move down and left', lang='en', slow=False)
         myobj.save("resources/down_left.mp3")
-        myobj = gTTS(text='move up and to the right', lang='en', slow=False)
+        myobj = gTTS(text='move up and right', lang='en', slow=False)
         myobj.save("resources/up_right.mp3")
-        myobj = gTTS(text='move down and to the right', lang='en', slow=False)
+        myobj = gTTS(text='move down and right', lang='en', slow=False)
         myobj.save("resources/down_right.mp3")
 
     def take_photo(self):
@@ -101,11 +103,11 @@ class SelfieApp:
         ret, frame = self.capture.read()
         if ret:
             # Name photo with timestamp and add file extension.
-            self.play_sound(SHUTTER_SOUND_FILE)
+            self.play_sound(SHUTTER_SOUND_FILE, queue=False)
             timestamp = time.strftime('%Y-%m-%d_%H.%M.%S')
             file_name = f'selfie_{timestamp}.{IMAGE_FILE_EXTENSION}'
             cv.imwrite(file_name, frame)
-            self.say(f'Photo taken and saved as {file_name}')
+            self.say(f'Photo taken and saved')
 
     def draw_grid(self, frame):
         """
@@ -188,21 +190,21 @@ class SelfieApp:
         else:
             return FACE_NONE  # No faces detected
 
-    def say(self, text, blocking=False):
+    def say(self, text, blocking=False, queue=True):
         myobj = gTTS(text=text, lang='en', slow=False)
         myobj.save('resources/temp.mp3')
         print(text)
-        self.play_sound('resources/temp.mp3')
+        self.play_sound('resources/temp.mp3', queue=queue)
         if blocking:
             while self.channel.get_busy():
                 pygame.time.delay(100)
 
     def listen_for_command(self):
-        self.play_sound('resources/listening.mp3')
+        self.play_sound('resources/listening_new.mp3')
         print('Listening')
         audio = self.recognizer.listen(self.mic,
                                        phrase_time_limit=PHRASE_TIME_LIMIT)
-        self.play_sound('resources/done_listening.mp3', queue=False)
+        self.play_sound('resources/done_listening_new.mp3', queue=False)
         print('Recognizing audio')
         spoken_text = self.recognizer.recognize_whisper(audio,
                                                         model=WHISPER_MODEL)
@@ -239,7 +241,9 @@ class SelfieApp:
     def guide_user(self, loc, target):
         current_time = time.time()
         time_since_last_hint = current_time - self.time_of_last_hint
-        if loc != self.last_position or time_since_last_hint >= 5:
+        if ((loc != self.last_position
+            or (time_since_last_hint >= TIME_BETWEEN_HINTS and loc != target))
+            and not self.countdown_begun):
             self.last_position = loc
             if loc == target:
                 self.play_sound("resources/position.mp3")
@@ -290,22 +294,23 @@ class SelfieApp:
                     self.play_sound("resources/right.mp3")
             elif loc == FACE_NONE:
                 self.play_sound("resources/none.mp3")
-        self.time_of_last_hint = current_time
+            self.time_of_last_hint = current_time
 
     def tutorial(self):
         self.say('First, say the region where you want your face to be'
-                 ' in the picture. Valid regions are "top left",'
-                 ' "top right", "center", "bottom left", and "bottom right".'
+                 ' in the picture. Valid regions are "top left", "top'
+                 ' right", "center", "bottom left", and "bottom right".'
                  ' Then, follow the directions to move your face to the'
-                 ' specified region. A picture will be taken'
+                 ' specified region. A countdown will begin'
                  ' automatically after you have been in the specified'
-                 f' region for {TIME_TO_COUNTDOWN} seconds. After a'
-                 ' picture has been taken, you may specify a different'
-                 ' region and take another picture, say "quit" to quit'
-                 ' the application, or say "help" to access this'
-                 ' information. You may also press the "S" key to take'
-                 ' a picture at any time or the "Q" key to quit at any'
-                 ' time.', blocking=True)
+                 f' region for {TIME_TO_COUNTDOWN} seconds. When the'
+                 ' countdown is finished, a picture will be taken.'
+                 ' After a picture has been taken, you may specify a'
+                 ' different region and take another picture, say'
+                 ' "quit" to quit the application, or say "help" to'
+                 ' access this information. You may also press the "S"'
+                 ' key to take a picture at any time or the "Q" key to'
+                 ' quit at any time.', blocking=True)
 
     def main_menu(self):
         """
@@ -328,18 +333,19 @@ class SelfieApp:
         while True:
             target_region = self.main_menu()
             if target_region == FACE_TOP_LEFT:
-                self.say('Target region set to top left.', blocking=True)
+                self.say('Target region set to top left', blocking=True)
             elif target_region == FACE_TOP_RIGHT:
-                self.say('Target region set to top right.', blocking=True)
+                self.say('Target region set to top right', blocking=True)
             elif target_region == FACE_BOTTOM_LEFT:
-                self.say('Target region set to bottom left.', blocking=True)
+                self.say('Target region set to bottom left', blocking=True)
             elif target_region == FACE_BOTTOM_RIGHT:
-                self.say('Target region set to bottom right.', blocking=True)
+                self.say('Target region set to bottom right', blocking=True)
             elif target_region == FACE_CENTER:
-                self.say('Target region set to center.', blocking=True)
+                self.say('Target region set to center', blocking=True)
             elif target_region == QUIT:
                 break
             time_in_target_region = -1
+            self.countdown_begun = False
             while True:
                 ret, frame = self.capture.read()
                 if ret:
@@ -356,11 +362,12 @@ class SelfieApp:
                                              - time_entered_target_region)
                 else:  # not loc == target_region
                     time_in_target_region = -1
+                    self.countdown_begun = False
                 key = cv.waitKey(1)
                 if key == ord('q'):
                     quit_ = True
                     break
-                elif key == ord('s') or time_in_target_region > TIME_TO_COUNTDOWN + 3:
+                elif key == ord('s') or time_in_target_region > TIME_TO_COUNTDOWN + COUNTDOWN_SECONDS:
                     end_time = time.time()
                     self.take_photo()
                     if TEST_MODE:
@@ -369,11 +376,13 @@ class SelfieApp:
                                 f'{self.participant_id},{target_region},{end_time - self.start_time}\n')
                     break
                 elif time_in_target_region > TIME_TO_COUNTDOWN:
-                    self.say('3... 2... 1...')
+                    if not self.countdown_begun:
+                        self.say('3... 2... 1...', queue=False)
+                        self.countdown_begun = True
             if quit_:
                 break
 
-        self.say('Quitting')
+        self.say('Quitting', blocking=True)
         self.mic.__exit__(None, None, None)  # This is a hack to avoid
         # using a with statement
         self.capture.release()
