@@ -85,26 +85,26 @@ class SceneApp:
         pygame.mixer.init()
         self.channel = pygame.mixer.Channel(0)
 
-        myobj = gTTS(text='you are in the correct position',
+        myobj = gTTS(text='the object is in the correct position',
                      lang='en', slow=False)
         myobj.save("resources/position.mp3")
-        myobj = gTTS(text='you are out of view', lang='en', slow=False)
+        myobj = gTTS(text='the object is out of view', lang='en', slow=False)
         myobj.save("resources/none.mp3")
-        myobj = gTTS(text='move to the left', lang='en', slow=False)
+        myobj = gTTS(text='move the object to the left', lang='en', slow=False)
         myobj.save("resources/left.mp3")
-        myobj = gTTS(text='move to the right', lang='en', slow=False)
+        myobj = gTTS(text='move the object to the right', lang='en', slow=False)
         myobj.save("resources/right.mp3")
-        myobj = gTTS(text='move up', lang='en', slow=False)
+        myobj = gTTS(text='move the object up', lang='en', slow=False)
         myobj.save("resources/up.mp3")
-        myobj = gTTS(text='move down', lang='en', slow=False)
+        myobj = gTTS(text='move the object down', lang='en', slow=False)
         myobj.save("resources/down.mp3")
-        myobj = gTTS(text='move up and to the left', lang='en', slow=False)
+        myobj = gTTS(text='move the object up and to the left', lang='en', slow=False)
         myobj.save("resources/up_left.mp3")
-        myobj = gTTS(text='move down and to the left', lang='en', slow=False)
+        myobj = gTTS(text='move the object down and to the left', lang='en', slow=False)
         myobj.save("resources/down_left.mp3")
-        myobj = gTTS(text='move up and to the right', lang='en', slow=False)
+        myobj = gTTS(text='move the object up and to the right', lang='en', slow=False)
         myobj.save("resources/up_right.mp3")
-        myobj = gTTS(text='move down and to the right', lang='en', slow=False)
+        myobj = gTTS(text='move the object down and to the right', lang='en', slow=False)
         myobj.save("resources/down_right.mp3")
 
     def take_photo(self):
@@ -450,10 +450,10 @@ class SceneApp:
             if command == START:
                 return command
 
-    def choose_region(self):
+    def choose_region(self, target_object):
         while True:
             self.say(
-                "Specify a region for the chosen object.", blocking=True)
+                f"Specify a region for the {target_object}.", blocking=True)
             command = self.listen_for_command()
             if command is not None:
                 if command != START:
@@ -472,7 +472,7 @@ class SceneApp:
             ret, frame = self.capture.read()
             target_object = self.choose_object(frame)
 
-            target_region = self.choose_region()
+            target_region = self.choose_region(target_object)
             if target_region == OBJ_TOP_LEFT:
                 self.say('Target region set to top left.', blocking=True)
             elif target_region == OBJ_TOP_RIGHT:
