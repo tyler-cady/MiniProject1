@@ -246,6 +246,38 @@ class SceneApp:
             elif loc == FACE_NONE:
                 self.play_sound("resources/none.mp3")
         self.time_of_last_hint = current_time
+    def orange_error(self):
+        #if camera detects orange, say "error orange detected, oranges don't exist"
+        self.say("Error: Orange detected. Oranges don't exist.")
+    def get_object_region(self, frame, object_coords):
+        """
+        Determine which region the detected object is in.
+        """
+        h, w, _ = frame.shape
+        x, y, width, height = object_coords
+
+        total_object_area = width * height
+        square1_area = ((w // 2) - x) * ((h // 2) - y)
+        square2_area = (x + width - (w // 2)) * ((h // 2) - y)
+        square3_area = ((w // 2) - x) * (y + height - (h // 2))
+        square4_area = (x + width - (w // 2)) * (y + height - (h // 2))
+
+        quadrant_pcts = tuple(((square_area / total_object_area) * 100)
+                            for square_area in (square1_area,
+                                                square2_area,
+                                                square3_area,
+                                                square4_area))
+
+        # Determine and return the object location.
+        if all(0 <= value <= 50 for value in quadrant_pcts):
+            return OBJ_CENTER
+        elif all(value == 0 for value in quadrant_pcts):
+            return OBJ_NONE  # No object detected
+        else:
+            quadrant_index = quadrant_pcts.index(max(quadrant_pcts))
+            quadrants = [OBJ_TOP_LEFT, OBJ_TOP_RIGHT,
+                        OBJ_BOTTOM_LEFT, OBJ_BOTTOM_RIGHT]
+            return quadrants[quadrant_index]
 
     def mainMenu(self):
         while True:
@@ -278,8 +310,8 @@ class SceneApp:
                 if ret:
                     self.draw_grid(frame)
                     self.draw_face_box(frame)
-                    cv.imshow("Selfie App", frame)
-                    loc = self.get_face_region(frame)
+                    cv.imshow("Scene App", frame)
+                    loc = self.get_obj_region(frame)
                     self.guide_user(loc, target_region)
                 if loc == target_region:
                     current_time = time.time()
