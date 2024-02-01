@@ -13,7 +13,7 @@ from gtts import gTTS
 
 TEST_MODE = True
 
-CAMERA_ID = 0
+CAMERA_ID = 1
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
 TIME_TO_COUNTDOWN = 2
 
@@ -295,13 +295,13 @@ class SelfieApp:
     def tutorial(self):
         self.say('First, say the region where you want your face to be'
                  ' in the picture. Valid regions are "top left",'
-                 ' "top right", "bottom left", and "bottom right".'
+                 ' "top right", "center", "bottom left", and "bottom right".'
                  ' Then, follow the directions to move your face to the'
                  ' specified region. A picture will be taken'
                  ' automatically after you have been in the specified'
                  f' region for {TIME_TO_COUNTDOWN} seconds. After a'
                  ' picture has been taken, you may specify a different'
-                 ' region and take another picutre, say "quit" to quit'
+                 ' region and take another picture, say "quit" to quit'
                  ' the application, or say "help" to access this'
                  ' information. You may also press the "S" key to take'
                  ' a picture at any time or the "Q" key to quit at any'

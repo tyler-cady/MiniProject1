@@ -14,7 +14,7 @@ from ultralytics import YOLO
 model = YOLO('yolov8n.pt')
 
 # Constants
-CAMERA_ID = 0
+CAMERA_ID = 1
 OBJ_DETECTION_THRESHOLD = 0.2
 TIME_TO_COUNTDOWN = 2
 
@@ -43,7 +43,17 @@ RIGHT_KEYWORDS = ['right']
 TOP_KEYWORDS = ['top', 'upper']
 BOTTOM_KEYWORDS = ['bottom', 'lower']
 CENTER_KEYWORDS = ['center', 'middle']
-OBJ_KEYWORDS = open("words.txt")
+ONE_KEYWORDS = ['one', '1']
+TWO_KEYWORDS = ['two', '2']
+THREE_KEYWORDS = ['three', '3']
+FOUR_KEYWORDS = ['four', '4']
+FIVE_KEYWORDS = ['five', '5']
+SIX_KEYWORDS = ['six', '6']
+SEVEN_KEYWORDS = ['seven', '7']
+EIGHT_KEYWORDS = ['eight', '8']
+NINE_KEYWORDS = ['nine', '9']
+
+#OBJ_KEYWORDS = open("words.txt")
 
 PHRASE_TIME_LIMIT = 2
 WHISPER_MODEL = 'tiny.en'
@@ -51,8 +61,12 @@ WHISPER_MODEL = 'tiny.en'
 
 class SceneApp:
     def __init__(self):
+
+        self.last_position = 6
+        self.time_of_last_hint = time.time()
+
         # Init camera, face detection, and sound
-        self.capture = cv2.VideoCapture(0)
+        self.capture = cv.VideoCapture(CAMERA_ID)
         pygame.mixer.init()
 
         # Init object detection model
@@ -117,12 +131,28 @@ class SceneApp:
                     coords = [round(float(coord)) for coord in box.xyxy[0]]
                     if confidence > 0.5:
                         # Draw bounding box.
-                        frame = cv2.rectangle(
+                        frame = cv.rectangle(
                             frame, coords[0:2], coords[2:4], (0, 255, 0), 2)
                         # Add label.
-                        frame = cv2.putText(frame, f"{class_name}: {confidence:.2f}",
-                                            (coords[0], coords[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        frame = cv.putText(frame, f"{class_name}: {confidence:.2f}",
+                                            (coords[0], coords[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         return frame
+
+    def find_target_obj(self, frame, target_object):
+        results = model(frame)
+        if isinstance(results, list) and len(results) > 0:
+            result = results[0]
+            if 'boxes' in result._keys:
+                boxes = result.boxes
+                for box in boxes:
+                    class_id = int(box.cls)
+                    class_name = result.names[class_id]
+                    coords = [round(float(coord)) for coord in box.xyxy[0]]
+                    if class_name == target_object:
+                        return coords
+
+        return -1
+
     # User Iteractions:
     
     def listen_for_command(self):
@@ -172,19 +202,50 @@ class SceneApp:
         spoken_text = self.recognizer.recognize_whisper(audio, model=WHISPER_MODEL)
         print(f'You said "{spoken_text}"')
 
-        detected_objects = self.detect_objects(frame)  # Assuming frame is the current camera frame
+        spoken_text = spoken_text.lower()
 
-        if detected_objects:
-            spoken_text = spoken_text.lower()
-            for obj in detected_objects:
-                if obj.lower() in spoken_text:
-                    return obj
+        one_ = any(keyword in spoken_text for keyword in ONE_KEYWORDS)
+        two_ = any(keyword in spoken_text for keyword in TWO_KEYWORDS)
+        three_ = any(keyword in spoken_text for keyword in THREE_KEYWORDS)
+        four_ = any(keyword in spoken_text for keyword in FOUR_KEYWORDS)
+        five_ = any(keyword in spoken_text for keyword in FIVE_KEYWORDS)
+        six_ = any(keyword in spoken_text for keyword in SIX_KEYWORDS)
+        seven_ = any(keyword in spoken_text for keyword in SEVEN_KEYWORDS)
+        eight_ = any(keyword in spoken_text for keyword in EIGHT_KEYWORDS)
+        nine_ = any(keyword in spoken_text for keyword in NINE_KEYWORDS)
+
+        if one_:
+            return 1
+        if two_:
+            return 2
+        if three_:
+            return 3
+        if four_:
+            return 4
+        if five_:
+            return 5
+        if six_:
+            return 6
+        if seven_:
+            return 7
+        if eight_:
+            return 8
+        if nine_:
+            return 9
+
+        #detected_objects = self.detect_objects(frame)  # Assuming frame is the current camera frame
+
+        #if detected_objects:
+        #    spoken_text = spoken_text.lower()
+        #    for obj in detected_objects:
+        #        if obj.lower() in spoken_text:
+        #            return obj
 
             # If none of the detected objects match the spoken text
-            self.say("Invalid object. Please try again.")
-            return None
+        #    self.say("Invalid object. Please try again.")
+        #    return None
 
-        return None
+        return 0
     
     def say(self, text, blocking=False):
         myobj = gTTS(text=text, lang='en', slow=False)
@@ -215,14 +276,33 @@ class SceneApp:
                  "Then, you will choose an object to photograph."
                  "Next you will choose the desired position of the object in the frame."
                  "Your options are: center, top left, top right, bottom left, bottom right."
-                 "Finally once you have the camera aimed correctly, I will take the photo and save it.")
+                 "Finally once you have the camera aimed correctly, I will take the photo and save it.", blocking=True)
 
-    def play_sound(self, file_path):
+    def draw_grid(self, frame):
+        """
+        Draw a grid on frame that divides it into four quadrants and
+        a center region.
+        """
+        h, w = frame.shape[:2]
+        frame_copy = frame.copy()
+        for line_start, line_end in (((w // 2, 0), (w // 2, h)),
+                                     ((0, h // 2), (w, h // 2))):
+            cv.line(frame_copy, line_start, line_end,
+                    GRIDLINES_COLOR_BGR, GRIDLINES_THICKNESS)
+        cv.rectangle(frame_copy, (w // 4, h // 4), (3 * w // 4, 3 * h // 4),
+                     GRIDLINES_COLOR_BGR, GRIDLINES_THICKNESS)
+        cv.addWeighted(frame_copy, GRIDLINES_ALPHA, frame,
+                       1 - GRIDLINES_ALPHA, 0, frame)
+
+    def play_sound(self, file_path, queue=True):
         """
         Play a sound from a file.
         """
-        pygame.mixer.music.load(file_path)
-        pygame.mixer.music.play()
+        sound = pygame.mixer.Sound(file_path)
+        if queue:
+            self.channel.queue(sound)
+        else:
+            self.channel.play(sound)
 
     def guide_user(self, loc, target):
         current_time = time.time()
@@ -288,6 +368,9 @@ class SceneApp:
         """
         Determine which region the detected object is in.
         """
+        if object_coords == -1:
+            return OBJ_NONE
+
         h, w, _ = frame.shape
         x, y, width, height = object_coords
 
@@ -314,7 +397,7 @@ class SceneApp:
                          OBJ_BOTTOM_LEFT, OBJ_BOTTOM_RIGHT]
             return quadrants[quadrant_index]
 
-    def choose_object(self, frame, objects):
+    def choose_object(self, frame):
         """
         Choose an object to photograph.
         """
@@ -335,33 +418,29 @@ class SceneApp:
                         detected_objects.append(class_name)
 
         if not detected_objects:
-            self.say("No objects detected. Please try again.")
+            self.say("No objects detected. Please try again.", blocking=True)
             return None
 
-        self.say("Detected objects in the scene:")
+        self.say("Detected objects in the scene:", blocking=True)
         for i, obj in enumerate(detected_objects, start=1):
-            self.say(f"{i}. {obj}")
+            self.say(f"{i}. {obj}", blocking=True)
 
         while True:
             self.say(
-                "Please choose a number for the object you'd like to photograph.")
-            choice_text = self.listen_for_command()
+                "Please choose a number for the object you'd like to photograph.", blocking=True)
+            choice = self.listen_for_object()
 
-            try:
-                choice = int(choice_text)
-                if 1 <= choice <= len(detected_objects):
-                    chosen_object = detected_objects[choice - 1]
-                    self.say(f"You've chosen to photograph {chosen_object}.")
-                    return chosen_object
-                else:
-                    self.say("Invalid choice. Please choose a valid number.")
-            except ValueError:
-                self.say("Invalid input. Please enter a number.")
+            if 1 <= choice <= len(detected_objects):
+                chosen_object = detected_objects[choice - 1]
+                self.say(f"You've chosen to photograph {chosen_object}.", blocking=True)
+                return chosen_object
+            else:
+                self.say("Invalid choice. Please choose a valid number.", blocking=True)
 
     def mainMenu(self):
         while True:
             self.say(
-                "Welcome to SceneApp. Say a region or say help for a tutorial.")
+                "Welcome to SceneApp. Say a region or say help for a tutorial.", blocking=True)
             command = self.listen_for_command()
             if command is not None:
                 return command
@@ -374,7 +453,7 @@ class SceneApp:
         quit_ = False
         while True:
 
-            target_region = self.main_menu()
+            target_region = self.mainMenu()
             if target_region == OBJ_TOP_LEFT:
                 self.say('Target region set to top left.', blocking=True)
             elif target_region == OBJ_TOP_RIGHT:
@@ -388,13 +467,18 @@ class SceneApp:
             elif target_region == QUIT:
                 break
             time_in_target_region = -1
+
+            ret, frame = self.capture.read()
+            target_object = self.choose_object(frame)
+
             while True:
                 ret, frame = self.capture.read()
                 if ret:
                     self.draw_grid(frame)
-                    self.draw_face_box(frame)
                     cv.imshow("Scene App", frame)
-                    loc = self.get_obj_region(frame)
+                    coords = self.find_target_obj(frame, target_object)
+                    print(coords)
+                    loc = self.get_object_region(frame, coords)
                     self.guide_user(loc, target_region)
                 if loc == target_region:
                     current_time = time.time()

@@ -13,7 +13,7 @@ model = YOLO('yolov8n.pt')
 
 
 
-CAMERA_ID = 0
+CAMERA_ID = 1
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
 
 IMAGE_FILE_EXTENSION = 'jpg'
