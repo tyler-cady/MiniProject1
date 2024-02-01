@@ -374,7 +374,7 @@ class SelfieApp:
             if quit_:
                 break
 
-        self.say('Quitting')
+        self.say('Quitting', blocking=True)
         self.mic.__exit__(None, None, None)  # This is a hack to avoid
         # using a with statement
         self.capture.release()
