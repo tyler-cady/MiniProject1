@@ -13,7 +13,7 @@ from ultralytics import YOLO
 # Load the model
 model = YOLO('yolov8n.pt')
 
-# Constants 
+# Constants
 CAMERA_ID = 0
 OBJ_DETECTION_THRESHOLD = 0.2
 TIME_TO_COUNTDOWN = 2
@@ -43,9 +43,11 @@ RIGHT_KEYWORDS = ['right']
 TOP_KEYWORDS = ['top', 'upper']
 BOTTOM_KEYWORDS = ['bottom', 'lower']
 CENTER_KEYWORDS = ['center', 'middle']
+OBJ_KEYWORDS = open("words.txt")
 
 PHRASE_TIME_LIMIT = 2
 WHISPER_MODEL = 'tiny.en'
+
 
 class SceneApp:
     def __init__(self):
@@ -55,13 +57,14 @@ class SceneApp:
 
         # Init object detection model
         self.model = YOLO('yolov8n.pt')
-        
+
         self.recognizer = sr.Recognizer()
         self.mic = sr.Microphone()
         self.mic.__enter__()  # This is a hack to avoid using a with statement
         self.recognizer.adjust_for_ambient_noise(self.mic, duration=1)
         audio = self.recognizer.record(self.mic, 0.1)
-        self.recognizer.recognize_whisper(audio, model=WHISPER_MODEL)  # Load Whisper model
+        self.recognizer.recognize_whisper(
+            audio, model=WHISPER_MODEL)  # Load Whisper model
 
         pygame.mixer.init()
         self.channel = pygame.mixer.Channel(0)
@@ -87,6 +90,7 @@ class SceneApp:
         myobj.save("resources/up_right.mp3")
         myobj = gTTS(text='move down and to the right', lang='en', slow=False)
         myobj.save("resources/down_right.mp3")
+
     def take_photo(self):
         """
         Capture a frame, save the frame, and play a shutter sound.
@@ -99,6 +103,7 @@ class SceneApp:
             file_name = f'selfie_{timestamp}.{IMAGE_FILE_EXTENSION}'
             cv.imwrite(file_name, frame)
             self.say(f'Photo taken and saved as {file_name}')
+
     def detect_objects(self, frame):
         results = model(frame)
         if isinstance(results, list) and len(results) > 0:
@@ -118,7 +123,8 @@ class SceneApp:
                         frame = cv2.putText(frame, f"{class_name}: {confidence:.2f}",
                                             (coords[0], coords[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         return frame
-    # User Iteractions: 
+    # User Iteractions:
+    
     def listen_for_command(self):
         self.play_sound('resources/listening.mp3')
         print('Listening')
@@ -157,6 +163,29 @@ class SceneApp:
                     return OBJ_BOTTOM_RIGHT
         else:
             return None
+    def listen_for_object(self):
+        self.play_sound('resources/listening.mp3')
+        print('Listening')
+        audio = self.recognizer.listen(self.mic, phrase_time_limit=PHRASE_TIME_LIMIT)
+        self.play_sound('resources/done_listening.mp3', queue=False)
+        print('Recognizing audio')
+        spoken_text = self.recognizer.recognize_whisper(audio, model=WHISPER_MODEL)
+        print(f'You said "{spoken_text}"')
+
+        detected_objects = self.detect_objects(frame)  # Assuming frame is the current camera frame
+
+        if detected_objects:
+            spoken_text = spoken_text.lower()
+            for obj in detected_objects:
+                if obj.lower() in spoken_text:
+                    return obj
+
+            # If none of the detected objects match the spoken text
+            self.say("Invalid object. Please try again.")
+            return None
+
+        return None
+    
     def say(self, text, blocking=False):
         myobj = gTTS(text=text, lang='en', slow=False)
         myobj.save('resources/temp.mp3')
@@ -165,6 +194,7 @@ class SceneApp:
         if blocking:
             while self.channel.get_busy():
                 pygame.time.delay(100)
+
     def list_objects(self, frame):
         results = self.model(frame)
         if isinstance(results, list) and len(results) > 0:
@@ -179,18 +209,21 @@ class SceneApp:
                     if confidence > 0.5:
                         detected = f"{class_name} detected"
                         self.say(detected)
+
     def tutorial(self):
         self.say("First, I will identify the objects in the frame."
-                "Then, you will choose an object to photograph."
-                "Next you will choose the desired position of the object in the frame."
-                "Your options are: center, top left, top right, bottom left, bottom right."
-                "Finally once you have the camera aimed correctly, I will take the photo and save it.")
+                 "Then, you will choose an object to photograph."
+                 "Next you will choose the desired position of the object in the frame."
+                 "Your options are: center, top left, top right, bottom left, bottom right."
+                 "Finally once you have the camera aimed correctly, I will take the photo and save it.")
+
     def play_sound(self, file_path):
         """
         Play a sound from a file.
         """
         pygame.mixer.music.load(file_path)
         pygame.mixer.music.play()
+
     def guide_user(self, loc, target):
         current_time = time.time()
         time_since_last_hint = current_time - self.time_of_last_hint
@@ -198,57 +231,59 @@ class SceneApp:
             self.last_position = loc
             if loc == target:
                 self.play_sound("resources/position.mp3")
-            elif loc == FACE_TOP_LEFT:
-                if (target == FACE_TOP_RIGHT):
+            elif loc == OBJ_TOP_LEFT:
+                if (target == OBJ_TOP_RIGHT):
                     self.play_sound("resources/left.mp3")
-                if (target == FACE_CENTER):
+                if (target == OBJ_CENTER):
                     self.play_sound("resources/down_left.mp3")
-                if (target == FACE_BOTTOM_LEFT):
+                if (target == OBJ_BOTTOM_LEFT):
                     self.play_sound("resources/down.mp3")
-                if (target == FACE_BOTTOM_RIGHT):
+                if (target == OBJ_BOTTOM_RIGHT):
                     self.play_sound("resources/down_left.mp3")
-            elif loc == FACE_TOP_RIGHT:
-                if (target == FACE_TOP_LEFT):
+            elif loc == OBJ_TOP_RIGHT:
+                if (target == OBJ_TOP_LEFT):
                     self.play_sound("resources/right.mp3")
-                if (target == FACE_CENTER):
+                if (target == OBJ_CENTER):
                     self.play_sound("resources/down_right.mp3")
-                if (target == FACE_BOTTOM_LEFT):
+                if (target == OBJ_BOTTOM_LEFT):
                     self.play_sound("resources/down_right.mp3")
-                if (target == FACE_BOTTOM_RIGHT):
+                if (target == OBJ_BOTTOM_RIGHT):
                     self.play_sound("resources/down.mp3")
-            elif loc == FACE_CENTER:
-                if (target == FACE_TOP_LEFT):
+            elif loc == OBJ_CENTER:
+                if (target == OBJ_TOP_LEFT):
                     self.play_sound("resources/up_right.mp3")
-                if (target == FACE_TOP_RIGHT):
+                if (target == OBJ_TOP_RIGHT):
                     self.play_sound("resources/up_left.mp3")
-                if (target == FACE_BOTTOM_LEFT):
+                if (target == OBJ_BOTTOM_LEFT):
                     self.play_sound("resources/down_right.mp3")
-                if (target == FACE_BOTTOM_RIGHT):
+                if (target == OBJ_BOTTOM_RIGHT):
                     self.play_sound("resources/down_left.mp3")
-            elif loc == FACE_BOTTOM_LEFT:
-                if (target == FACE_TOP_LEFT):
+            elif loc == OBJ_BOTTOM_LEFT:
+                if (target == OBJ_TOP_LEFT):
                     self.play_sound("resources/up.mp3")
-                if (target == FACE_TOP_RIGHT):
+                if (target == OBJ_TOP_RIGHT):
                     self.play_sound("resources/up_left.mp3")
-                if (target == FACE_CENTER):
+                if (target == OBJ_CENTER):
                     self.play_sound("resources/up_left.mp3")
-                if (target == FACE_BOTTOM_RIGHT):
+                if (target == OBJ_BOTTOM_RIGHT):
                     self.play_sound("resources/left.mp3")
-            elif loc == FACE_BOTTOM_RIGHT:
-                if (target == FACE_TOP_LEFT):
+            elif loc == OBJ_BOTTOM_RIGHT:
+                if (target == OBJ_TOP_LEFT):
                     self.play_sound("resources/up_right.mp3")
-                if (target == FACE_TOP_RIGHT):
+                if (target == OBJ_TOP_RIGHT):
                     self.play_sound("resources/up.mp3")
-                if (target == FACE_CENTER):
+                if (target == OBJ_CENTER):
                     self.play_sound("resources/up_right.mp3")
-                if (target == FACE_BOTTOM_LEFT):
+                if (target == OBJ_BOTTOM_LEFT):
                     self.play_sound("resources/right.mp3")
-            elif loc == FACE_NONE:
+            elif loc == OBJ_NONE:
                 self.play_sound("resources/none.mp3")
         self.time_of_last_hint = current_time
+
     def orange_error(self):
-        #if camera detects orange, say "error orange detected, oranges don't exist"
+        # if camera detects orange, say "error orange detected, oranges don't exist"
         self.say("Error: Orange detected. Oranges don't exist.")
+
     def get_object_region(self, frame, object_coords):
         """
         Determine which region the detected object is in.
@@ -263,10 +298,10 @@ class SceneApp:
         square4_area = (x + width - (w // 2)) * (y + height - (h // 2))
 
         quadrant_pcts = tuple(((square_area / total_object_area) * 100)
-                            for square_area in (square1_area,
-                                                square2_area,
-                                                square3_area,
-                                                square4_area))
+                              for square_area in (square1_area,
+                                                  square2_area,
+                                                  square3_area,
+                                                  square4_area))
 
         # Determine and return the object location.
         if all(0 <= value <= 50 for value in quadrant_pcts):
@@ -276,21 +311,69 @@ class SceneApp:
         else:
             quadrant_index = quadrant_pcts.index(max(quadrant_pcts))
             quadrants = [OBJ_TOP_LEFT, OBJ_TOP_RIGHT,
-                        OBJ_BOTTOM_LEFT, OBJ_BOTTOM_RIGHT]
+                         OBJ_BOTTOM_LEFT, OBJ_BOTTOM_RIGHT]
             return quadrants[quadrant_index]
+
+    def choose_object(self, frame, objects):
+        """
+        Choose an object to photograph.
+        """
+        self.list_objects(frame)
+
+        detected_objects = []
+        results = self.model(frame)
+        if isinstance(results, list) and len(results) > 0:
+            result = results[0]
+            if 'boxes' in result._keys:
+                boxes = result.boxes
+                for box in boxes:
+                    class_id = int(box.cls)
+                    class_name = result.names[class_id]
+                    confidence = float(box.conf)
+                    coords = [round(float(coord)) for coord in box.xyxy[0]]
+                    if confidence > OBJ_DETECTION_THRESHOLD:
+                        detected_objects.append(class_name)
+
+        if not detected_objects:
+            self.say("No objects detected. Please try again.")
+            return None
+
+        self.say("Detected objects in the scene:")
+        for i, obj in enumerate(detected_objects, start=1):
+            self.say(f"{i}. {obj}")
+
+        while True:
+            self.say(
+                "Please choose a number for the object you'd like to photograph.")
+            choice_text = self.listen_for_command()
+
+            try:
+                choice = int(choice_text)
+                if 1 <= choice <= len(detected_objects):
+                    chosen_object = detected_objects[choice - 1]
+                    self.say(f"You've chosen to photograph {chosen_object}.")
+                    return chosen_object
+                else:
+                    self.say("Invalid choice. Please choose a valid number.")
+            except ValueError:
+                self.say("Invalid input. Please enter a number.")
 
     def mainMenu(self):
         while True:
-            self.say("Welcome to SceneApp. Say a region or say help for a tutorial.")
+            self.say(
+                "Welcome to SceneApp. Say a region or say help for a tutorial.")
             command = self.listen_for_command()
             if command is not None:
                 return command
+
     def run(self):
         """
-        Run selfie app main loop.
+        Run scene app main loop.
         """
+
         quit_ = False
         while True:
+
             target_region = self.main_menu()
             if target_region == OBJ_TOP_LEFT:
                 self.say('Target region set to top left.', blocking=True)
@@ -338,7 +421,6 @@ class SceneApp:
         # using a with statement
         self.capture.release()
         cv.destroyAllWindows()
-
 
 
 if __name__ == "__main__":
