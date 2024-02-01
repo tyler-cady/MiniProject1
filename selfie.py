@@ -298,18 +298,19 @@ class SelfieApp:
 
     def tutorial(self):
         self.say('First, say the region where you want your face to be'
-                 ' in the picture. Valid regions are "top left",'
-                 ' "top right", "center", "bottom left", and "bottom right".'
+                 ' in the picture. Valid regions are "top left", "top'
+                 ' right", "center", "bottom left", and "bottom right".'
                  ' Then, follow the directions to move your face to the'
-                 ' specified region. A picture will be taken'
+                 ' specified region. A countdown will begin'
                  ' automatically after you have been in the specified'
-                 f' region for {TIME_TO_COUNTDOWN} seconds. After a'
-                 ' picture has been taken, you may specify a different'
-                 ' region and take another picture, say "quit" to quit'
-                 ' the application, or say "help" to access this'
-                 ' information. You may also press the "S" key to take'
-                 ' a picture at any time or the "Q" key to quit at any'
-                 ' time.', blocking=True)
+                 f' region for {TIME_TO_COUNTDOWN} seconds. When the'
+                 ' countdown is finished, a picture will be taken.'
+                 ' After a picture has been taken, you may specify a'
+                 ' different region and take another picture, say'
+                 ' "quit" to quit the application, or say "help" to'
+                 ' access this information. You may also press the "S"'
+                 ' key to take a picture at any time or the "Q" key to'
+                 ' quit at any time.', blocking=True)
 
     def main_menu(self):
         """
