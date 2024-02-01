@@ -11,7 +11,7 @@ import pygame
 import speech_recognition as sr
 from gtts import gTTS
 
-TEST_MODE = True
+TEST_MODE = False
 
 CAMERA_ID = 1
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
