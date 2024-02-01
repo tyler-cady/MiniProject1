@@ -17,6 +17,7 @@ CAMERA_ID = 0
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
 TIME_BETWEEN_HINTS = 2
 TIME_TO_COUNTDOWN = 2
+COUNTDOWN_SECONDS = 2.5
 
 IMAGE_FILE_EXTENSION = 'jpg'
 SHUTTER_SOUND_FILE = 'resources/shutter.mp3'
@@ -189,11 +190,11 @@ class SelfieApp:
         else:
             return FACE_NONE  # No faces detected
 
-    def say(self, text, blocking=False):
+    def say(self, text, blocking=False, queue=True):
         myobj = gTTS(text=text, lang='en', slow=False)
         myobj.save('resources/temp.mp3')
         print(text)
-        self.play_sound('resources/temp.mp3')
+        self.play_sound('resources/temp.mp3', queue=queue)
         if blocking:
             while self.channel.get_busy():
                 pygame.time.delay(100)
@@ -240,7 +241,9 @@ class SelfieApp:
     def guide_user(self, loc, target):
         current_time = time.time()
         time_since_last_hint = current_time - self.time_of_last_hint
-        if (loc != self.last_position or (time_since_last_hint >= TIME_BETWEEN_HINTS and loc != FACE_CENTER)):
+        if ((loc != self.last_position
+            or (time_since_last_hint >= TIME_BETWEEN_HINTS and loc != target))
+            and not self.countdown_begun):
             self.last_position = loc
             if loc == target:
                 self.play_sound("resources/position.mp3")
@@ -341,6 +344,7 @@ class SelfieApp:
             elif target_region == QUIT:
                 break
             time_in_target_region = -1
+            self.countdown_begun = False
             while True:
                 ret, frame = self.capture.read()
                 if ret:
@@ -357,11 +361,12 @@ class SelfieApp:
                                              - time_entered_target_region)
                 else:  # not loc == target_region
                     time_in_target_region = -1
+                    self.countdown_begun = False
                 key = cv.waitKey(1)
                 if key == ord('q'):
                     quit_ = True
                     break
-                elif key == ord('s') or time_in_target_region > TIME_TO_COUNTDOWN + 3:
+                elif key == ord('s') or time_in_target_region > TIME_TO_COUNTDOWN + COUNTDOWN_SECONDS:
                     end_time = time.time()
                     self.take_photo()
                     if TEST_MODE:
@@ -370,7 +375,9 @@ class SelfieApp:
                                 f'{self.participant_id},{target_region},{end_time - self.start_time}\n')
                     break
                 elif time_in_target_region > TIME_TO_COUNTDOWN:
-                    self.say('3... 2... 1...')
+                    if not self.countdown_begun:
+                        self.say('3... 2... 1...', queue=False)
+                        self.countdown_begun = True
             if quit_:
                 break
 
