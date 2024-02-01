@@ -107,7 +107,7 @@ class SelfieApp:
             timestamp = time.strftime('%Y-%m-%d_%H.%M.%S')
             file_name = f'selfie_{timestamp}.{IMAGE_FILE_EXTENSION}'
             cv.imwrite(file_name, frame)
-            self.say(f'Photo taken and saved as {file_name}')
+            self.say(f'Photo taken and saved')
 
     def draw_grid(self, frame):
         """
