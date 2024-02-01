@@ -15,6 +15,7 @@ TEST_MODE = False
 
 CAMERA_ID = 0
 FACE_DETECTION_MIN_CONFIDENCE = 0.2
+TIME_BETWEEN_HINTS = 2
 TIME_TO_COUNTDOWN = 2
 
 IMAGE_FILE_EXTENSION = 'jpg'
@@ -239,7 +240,7 @@ class SelfieApp:
     def guide_user(self, loc, target):
         current_time = time.time()
         time_since_last_hint = current_time - self.time_of_last_hint
-        if loc != self.last_position or time_since_last_hint >= 5:
+        if (loc != self.last_position or (time_since_last_hint >= TIME_BETWEEN_HINTS and loc != FACE_CENTER)):
             self.last_position = loc
             if loc == target:
                 self.play_sound("resources/position.mp3")
@@ -290,7 +291,7 @@ class SelfieApp:
                     self.play_sound("resources/right.mp3")
             elif loc == FACE_NONE:
                 self.play_sound("resources/none.mp3")
-        self.time_of_last_hint = current_time
+            self.time_of_last_hint = current_time
 
     def tutorial(self):
         self.say('First, say the region where you want your face to be'
