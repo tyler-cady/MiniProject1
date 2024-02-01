@@ -199,11 +199,11 @@ class SelfieApp:
                 pygame.time.delay(100)
 
     def listen_for_command(self):
-        self.play_sound('resources/listening.mp3')
+        self.play_sound('resources/listening_new.mp3')
         print('Listening')
         audio = self.recognizer.listen(self.mic,
                                        phrase_time_limit=PHRASE_TIME_LIMIT)
-        self.play_sound('resources/done_listening.mp3', queue=False)
+        self.play_sound('resources/done_listening_new.mp3', queue=False)
         print('Recognizing audio')
         spoken_text = self.recognizer.recognize_whisper(audio,
                                                         model=WHISPER_MODEL)
