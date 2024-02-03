@@ -417,6 +417,8 @@ class SceneApp:
                 for box in boxes:
                     class_id = int(box.cls)
                     class_name = result.names[class_id]
+                    if class_name.lower() == 'orange':
+                        self.orange_error()
                     confidence = float(box.conf)
                     coords = [round(float(coord)) for coord in box.xyxy[0]]
                     if confidence > OBJ_DETECTION_THRESHOLD:
